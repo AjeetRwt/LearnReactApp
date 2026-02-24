@@ -87,41 +87,40 @@ const DetailsScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Stats Section */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View style={styles.statIcon}>
-              <Text>⏱</Text>
-            </View>
-            <Text style={styles.statValue}>8 hours</Text>
-          </View>
-          <View style={styles.statItem}>
-            <View style={styles.statIcon}>
-              <Text>🌡</Text>
-            </View>
-            <Text style={styles.statValue}>16°C</Text>
-          </View>
-          <View style={styles.statItem}>
-            <View style={styles.statIcon}>
-              <Text>⭐</Text>
-            </View>
-            <Text style={styles.statValue}>4.5</Text>
-          </View>
-        </View>
-
         {/* Description Section */}
         <View style={styles.content}>
-          <Text style={styles.description}>
-            This vast mountain range is renowned for its remarkable diversity in
-            terms of topography and climate. It features towering peaks, active
-            volcanoes, deep canyons, expansive plateaus, and extensive forests.
-          </Text>
+          {item.description && (
+            <>
+              <Text style={styles.descriptionTitle}>Summary</Text>
+              <Text style={styles.description}>{item.description}</Text>
+            </>
+          )}
+          {item.content && (
+            <>
+              <Text style={styles.descriptionTitle}>Full Article</Text>
+              <Text style={styles.description}>{item.content}</Text>
+            </>
+          )}
         </View>
+
+        {/* Published Date */}
+        {item.publishedAt && (
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateLabel}>Published:</Text>
+            <Text style={styles.dateText}>
+              {new Date(item.publishedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+        )}
 
         {/* Book Now Button */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Book Now</Text>
+            <Text style={styles.buttonText}>Read Full Article</Text>
             <Text style={styles.buttonIcon}>→</Text>
           </TouchableOpacity>
         </View>
@@ -238,32 +237,6 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 25,
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-    fontSize: 20,
-  },
-  statValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-  },
   content: {
     paddingHorizontal: 20,
     marginBottom: 30,
@@ -272,6 +245,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7a7a7a',
     lineHeight: 22,
+  },
+  descriptionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 10,
+    marginTop: 15,
+  },
+  dateContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e5e5',
+  },
+  dateLabel: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 5,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
   buttonContainer: {
     paddingHorizontal: 20,

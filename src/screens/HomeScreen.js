@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import ExclusiveOffers from './ExclusiveOffers';
 import Filter from '../assets/svg/fiter';
@@ -20,48 +21,52 @@ import Fav from '../assets/svg/fav';
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
 
-const DATA = [
-  {
-    id: '1',
-    title: 'Mount Fuji',
-    locatieson: 'Tokyo, Japan',
-    rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=800',
-  },
-  {
-    id: '2',
-    title: 'Andes',
-    location: 'South America',
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
-  },
-  {
-    id: '3',
-    title: 'Swiss Alps',
-    location: 'Switzerland',
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800',
-  },
-  {
-    id: '4',
-    title: 'Swiss Alps',
-    location: 'Switzerland',
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800',
-  },
-  {
-    id: '5',
-    title: 'Swiss Alps',
-    location: 'Switzerland',
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=800',
-  },
-];
+const API_URL =
+  'https://newsapi.org/v2/everything?q=tesla&from=2026-01-24&sortBy=publishedAt&apiKey=086b61f7769448e697e684cb78453492';
 
 const HomeScreen = () => {
   const [selectedTab, setSelectedTab] = useState('Most Viewed');
   const [favorites, setFavorites] = useState({});
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigation = useNavigation();
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(API_URL);
+      const data = await response.json();
+
+      if (data.articles) {
+        const formattedArticles = data.articles
+          .filter(article => article.urlToImage) // Only articles with images
+          .map((article, index) => ({
+            id: String(index),
+            title: article.title,
+            description: article.description,
+            location: article.source?.name || 'News Source',
+            image: article.urlToImage,
+            author: article.author,
+            publishedAt: article.publishedAt,
+            content: article.content,
+            url: article.url,
+          }));
+
+        setArticles(formattedArticles);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleFavorite = id => {
     setFavorites(prev => ({
@@ -73,7 +78,14 @@ const HomeScreen = () => {
   const renderDestinationCard = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => navigation?.navigate('Details', { item })}
+      onPress={() =>
+        navigation?.navigate('Details', {
+          item: {
+            ...item,
+            price: '0', // Default price for news articles
+          },
+        })
+      }
       activeOpacity={0.9}
     >
       <Image
@@ -89,15 +101,14 @@ const HomeScreen = () => {
         <Fav />
       </TouchableOpacity>
       <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
         <View style={styles.cardFooter}>
           <View style={styles.locationContainer}>
-            {/* <Icon name="location-outline" size={16} color="#CCC" /> */}
-            <Text style={styles.locationText}>{item.location}</Text>
-          </View>
-          <View style={styles.ratingContainer}>
-            {/* <Icon name="star" size={16} color="#FFD700" /> */}
-            <Text style={styles.ratingText}>{item.rating}</Text>
+            <Text style={styles.locationText} numberOfLines={1}>
+              {item.location}
+            </Text>
           </View>
         </View>
       </View>
@@ -141,7 +152,7 @@ const HomeScreen = () => {
 
           {/* Popular Places Section */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Popular places</Text>
+            <Text style={styles.sectionTitle}>Global News</Text>
             <TouchableOpacity activeOpacity={0.7}>
               <Text style={styles.viewAllText}>View all</Text>
             </TouchableOpacity>
@@ -149,7 +160,7 @@ const HomeScreen = () => {
 
           {/* Tab Navigation */}
           <View style={styles.tabContainer}>
-            {['Most Viewed', 'Nearby', 'Latest'].map(tab => (
+            {['Business', 'Technology', 'Sports'].map(tab => (
               <TouchableOpacity
                 key={tab}
                 style={[styles.tab, selectedTab === tab && styles.activeTab]}
@@ -168,19 +179,40 @@ const HomeScreen = () => {
             ))}
           </View>
 
-          {/* Destinations List */}
-          <FlatList
-            data={DATA}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={item => item.id}
-            renderItem={renderDestinationCard}
-            contentContainerStyle={styles.listContent}
-            snapToInterval={CARD_WIDTH + 15}
-            decelerationRate="fast"
-            bounces={true}
-            pagingEnabled={false}
-          />
+          {/* Loading State */}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#000" />
+              <Text style={styles.loadingText}>Loading articles...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Error: {error}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={fetchArticles}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : articles.length > 0 ? (
+            <FlatList
+              data={articles}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={item => item.id}
+              renderItem={renderDestinationCard}
+              contentContainerStyle={styles.listContent}
+              snapToInterval={CARD_WIDTH + 15}
+              decelerationRate="fast"
+              bounces={true}
+              pagingEnabled={false}
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No articles found</Text>
+            </View>
+          )}
           <ExclusiveOffers />
         </View>{' '}
       </ScrollView>
@@ -428,23 +460,46 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  ratingContainer: {
-    flexDirection: 'row',
+  loadingContainer: {
+    height: 300,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  ratingText: {
+  loadingText: {
+    marginTop: 10,
     fontSize: 14,
+    color: '#666',
+  },
+  errorContainer: {
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: '#1976D2',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
     color: '#FFFFFF',
-    marginLeft: 4,
+    fontSize: 14,
     fontWeight: '600',
-    ...Platform.select({
-      ios: {
-        fontFamily: 'System',
-        fontWeight: '600',
-      },
-      android: {
-        fontFamily: 'sans-serif-medium',
-      },
-    }),
+  },
+  emptyContainer: {
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
   },
 });

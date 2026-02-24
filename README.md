@@ -23,6 +23,10 @@ React Navigation (Stack + Bottom Tabs)
 React Native Vector Icons
 Functional Components
 
+## Assingment 2
+
+![App Demo](assets/demo.gif)
+
 📦 Installation
 1️⃣ Clone the repository
 git clone https://github.com/AjeetRwt/LearnReactApp
