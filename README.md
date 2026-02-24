@@ -1,31 +1,55 @@
-🌍 Travel App – React Native CLI
+📰 News App – React Native CLI
 
-A modern travel exploration mobile UI built using React Native CLI.
+A modern News Exploration Mobile UI built using React Native CLI.
 
-This project showcases a clean, minimal travel app design with destination cards, search functionality, category filters, and detailed screens.
+This project showcases a clean and minimal news app design with headline cards, search functionality, category filters, and detailed article screens.
 
-Features
+✨ Features
+
 👋 Personalized greeting header
-🔍 Search bar with filter icon
-🏷 Category chips (Most Viewed, Nearby, Latest)
 
-📸 UI Preview
+🔍 Search bar with filter icon
+
+🏷 Category chips (Top Headlines, Trending, Latest, Technology, Sports)
+
+📰 Breaking News section
+
+📸 Horizontal scroll news cards
+
+📖 Detailed Article Screen
+
+🧭 Bottom Tab Navigation
+
+📱 UI Preview
 Home Screen includes:
+
 Greeting section
+
 Profile avatar
+
 Search bar
-Popular places section
-Horizontal scroll cards
+
+Top Headlines section
+
+Category filters
+
+Horizontal scroll news cards
 
 🛠 Tech Stack
+
 React Native CLI
+
 React Navigation (Stack + Bottom Tabs)
+
 React Native Vector Icons
-Functional Components
+
+Functional Components & Hooks
+
+Open Source News API Integration
 
 ## Assingment 2
 
-![App Demo](assets/demo.gif)
+![App Demo](./assets/task.gif)
 
 📦 Installation
 1️⃣ Clone the repository
