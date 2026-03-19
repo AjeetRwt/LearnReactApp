@@ -13,8 +13,11 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  NativeModules,
+  PermissionsAndroid,
 } from 'react-native';
 import ExclusiveOffers from './ExclusiveOffers';
+import logger from '../utils/logger';
 import Filter from '../assets/svg/fiter';
 import Fav from '../assets/svg/fav';
 
@@ -22,7 +25,7 @@ const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
 
 const API_URL =
-  'https://newsapi.org/v2/everything?q=tesla&from=2026-01-24&sortBy=publishedAt&apiKey=086b61f7769448e697e684cb78453492';
+  'https://newsapi.org/v2/everything?q=tesla&from=2026-03-15&sortBy=publishedAt&apiKey=086b61f7769448e697e684cb78453492';
 
 const HomeScreen = () => {
   const [selectedTab, setSelectedTab] = useState('Most Viewed');
@@ -30,7 +33,107 @@ const HomeScreen = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [permissionStatus, setPermissionStatus] = useState({
+    camera: 'unknown',
+    location: 'unknown',
+  });
+  const [deviceInfo, setDeviceInfo] = useState(null);
   const navigation = useNavigation();
+
+  const { DemoNativeModule, DemoSwiftModule } = NativeModules;
+
+  const updateDeviceInfo = async () => {
+    try {
+      const module = DemoSwiftModule ?? DemoNativeModule;
+      if (module?.getDeviceInfo) {
+        const info = await module.getDeviceInfo();
+        logger.info('Device info from native module', info);
+        setDeviceInfo(info);
+      }
+    } catch (err) {
+      logger.warn('Native module getDeviceInfo failed', err);
+    }
+  };
+
+  const requestCameraPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'This app needs camera access to continue.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Deny',
+          },
+        );
+        const status =
+          granted === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
+        setPermissionStatus(prev => ({ ...prev, camera: status }));
+        logger.event('camera_permission_requested', {
+          platform: Platform.OS,
+          status,
+        });
+        return status;
+      }
+      const module = DemoSwiftModule ?? DemoNativeModule;
+      if (module?.requestCameraPermission) {
+        const status = await module.requestCameraPermission();
+        setPermissionStatus(prev => ({ ...prev, camera: status }));
+        logger.event('camera_permission_requested', {
+          platform: Platform.OS,
+          status,
+        });
+      }
+      return 'unsupported';
+    } catch (err) {
+      logger.warn('Camera permission request failed', err);
+      setPermissionStatus(prev => ({ ...prev, camera: 'denied' }));
+      return 'denied';
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'This app needs location access to continue.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Deny',
+          },
+        );
+        const status =
+          granted === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
+        setPermissionStatus(prev => ({ ...prev, location: status }));
+        logger.event('location_permission_requested', {
+          platform: Platform.OS,
+          status,
+        });
+        return status;
+      }
+      const module = DemoSwiftModule ?? DemoNativeModule;
+      if (module?.requestLocationPermission) {
+        const status = await module.requestLocationPermission();
+        setPermissionStatus(prev => ({ ...prev, location: status }));
+        logger.event('location_permission_requested', {
+          platform: Platform.OS,
+          status,
+        });
+      }
+      return 'unsupported';
+    } catch (err) {
+      logger.warn('Location permission request failed', err);
+      setPermissionStatus(prev => ({ ...prev, location: 'denied' }));
+      return 'denied';
+    }
+  };
+
+  useEffect(() => {
+    updateDeviceInfo();
+  }, []);
 
   useEffect(() => {
     fetchArticles();
@@ -61,7 +164,7 @@ const HomeScreen = () => {
       }
       setError(null);
     } catch (err) {
-      console.error('Error fetching articles:', err);
+      logger.error('Error fetching articles:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -130,6 +233,39 @@ const HomeScreen = () => {
               source={{ uri: 'https://i.pravatar.cc/100?img=12' }}
               style={styles.profileImage}
             />
+          </View>
+
+          {/* Native module + permission demo */}
+          <View style={styles.permissionContainer}>
+            <Text style={styles.permissionTitle}>Device + Permission Demo</Text>
+            <Text style={styles.permissionText}>
+              Native module: {deviceInfo?.deviceName || 'unavailable'} · OS:{' '}
+              {deviceInfo?.osVersion || 'unknown'}
+            </Text>
+            <View style={styles.permissionButtonsRow}>
+              <TouchableOpacity
+                style={styles.smallButton}
+                onPress={requestCameraPermission}
+              >
+                <Text style={styles.smallButtonText}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.smallButton}
+                onPress={requestLocationPermission}
+              >
+                <Text style={styles.smallButtonText}>Location</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.smallButton}
+                onPress={updateDeviceInfo}
+              >
+                <Text style={styles.smallButtonText}>Refresh Info</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.permissionText}>
+              Camera: {permissionStatus.camera} · Location:{' '}
+              {permissionStatus.location}
+            </Text>
           </View>
 
           {/* Search Bar */}
@@ -308,6 +444,44 @@ const styles = StyleSheet.create({
     padding: 14,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  permissionContainer: {
+    borderRadius: 14,
+    backgroundColor: '#F8FAFF',
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    marginHorizontal: 20,
+    padding: 12,
+    marginBottom: 16,
+  },
+  permissionTitle: {
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  permissionText: {
+    color: '#333',
+    marginBottom: 8,
+    fontSize: 13,
+  },
+  permissionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  smallButton: {
+    flex: 1,
+    marginHorizontal: 2,
+    backgroundColor: '#2236F0',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  smallButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   sectionHeader: {
     flexDirection: 'row',

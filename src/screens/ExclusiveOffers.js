@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import logger from '../utils/logger';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.75;
@@ -54,6 +55,7 @@ const ExclusiveOffers = () => {
     } catch (err) {
       console.error('Error fetching top headlines:', err);
       setOffers([]);
+      logger.error('Error fetching top headlines:', err);
     } finally {
       setLoading(false);
     }
